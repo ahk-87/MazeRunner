@@ -9,14 +9,14 @@ import kotlin.collections.ArrayDeque
 class GameMazeRunner() {
     var maze = emptyList<MutableList<Char>>()
     var solutionPath = ArrayDeque<Point>()
-    var width = 10
-    var height = 10
+    val width: Int
+        get() = maze[0].size
+    val height: Int
+        get() = maze.size
     val entrance = Point(0, 0)
 
     fun initialize(dim: Int) {
-        width = dim
-        height = dim
-        maze = List(height) { MutableList(width) { 'w' } }
+        maze = List(dim) { MutableList(dim) { 'w' } }
         generateMaze()
     }
 
@@ -65,12 +65,13 @@ class GameMazeRunner() {
             listOf(Point(1, 0), Point(0, 1), Point(-1, 0), Point(0, -1))
         else
             listOf(Point(2, 0), Point(0, 2), Point(-2, 0), Point(0, -2))
+
         return directions.map { Point(this.x + it.x, this.y + it.y) }
             .filter { it.x in 0 until width && it.y in 0 until height && (maze[it.y][it.x] == 'p') xor !neighbor }
     }
 
     fun solveMaze() {
-        entrance.y = maze.indexOfFirst { it[1] == 'p' }
+        entrance.y = maze.indexOfFirst { it[0] == 'p' }
         val visited = mutableSetOf<Point>()
         solutionPath.clear()
         solutionPath.addLast(entrance)
@@ -93,12 +94,18 @@ class GameMazeRunner() {
         drawMaze(true)
     }
 
-    fun loadMaze(f: File) {
-        val lines = f.readLines()
-        val h = lines.size
-        val w = lines[0].split(" ").size
-        maze = lines.map { row -> row.split(" ").map { it[0] }.toMutableList() }
-        width = w; height = h
+    fun loadMaze(fileName: String): Boolean {
+        try {
+            val f = File(fileName)
+            val lines = f.readLines()
+            maze = lines.map { row -> row.split(" ").map { it[0] }.toMutableList() }
+            return true
+        } catch (_: FileNotFoundException) {
+            println("The file $fileName does not exist")
+        } catch (_: Exception) {
+            println("Cannot load the maze. It has an invalid format")
+        }
+        return false
     }
 
     fun saveMaze(fileName: String) {
@@ -143,17 +150,7 @@ fun main() {
                 generated = true
             }
 
-            2 -> {
-                val file = File(readln())
-                try {
-                    game.loadMaze(file)
-                    generated = true
-                } catch (_: FileNotFoundException) {
-                    println("The file ${file.name} does not exist")
-                } catch (_: Exception) {
-                    println("Cannot load the maze. It has an invalid format")
-                }
-            }
+            2 -> generated = game.loadMaze(readln())
 
             3 -> if (generated) game.saveMaze(readln())
 
