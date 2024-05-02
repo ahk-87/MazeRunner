@@ -26,18 +26,18 @@ class GameMazeRunner() {
         val startX = Random().nextInt(1, width - 1)
         val startY = Random().nextInt(1, height - 1)
         maze[startY][startX] = 'p'
-        frontier.addAll(Point(startX, startY).getFrontier())
+        frontier.addAll(Point(startX, startY).getNeighbors(frontier = true, twoCells = true))
 
         while (frontier.isNotEmpty()) {
             val randomPoint = frontier.random()
             frontier.remove(randomPoint)
-            val neighbors = randomPoint.getFrontier(true)
+            val neighbors = randomPoint.getNeighbors(twoCells = true)
             if (neighbors.isNotEmpty()) {
                 connect(randomPoint, neighbors.random())
             }
             if (neighbors.size < 2)
                 if (!oldFrontier.add(randomPoint)) continue
-            frontier.addAll(randomPoint.getFrontier())
+            frontier.addAll(randomPoint.getNeighbors(frontier = true, twoCells = true))
         }
         // set an entrance at the first wall
         entrance.y = maze.indexOfFirst { it[1] == 'p' }
@@ -57,17 +57,17 @@ class GameMazeRunner() {
             maze[p1.y][p1.x] = 'p'
     }
 
-    // neighbor = false: Get the frontier cells - surroundings cell at a distance of 2 and a wall
-    // neighbor = true: Get the surrounding neighbours at a distance of 2 and a passage
-    // oneCell = true: Get the surrounding cells at a distance of 1
-    private fun Point.getFrontier(neighbor: Boolean = false, oneCell: Boolean = false): List<Point> {
-        val directions = if (oneCell)
-            listOf(Point(1, 0), Point(0, 1), Point(-1, 0), Point(0, -1))
-        else
+    // Get the neighbors cells - surrounding cells at a distance of 1 and a passage
+    // frontier = true: Get the surrounding frontier neighbours - cells with a wall
+    // twoCells = true: Get the surrounding cells at a distance of 2
+    private fun Point.getNeighbors(frontier: Boolean = false, twoCells: Boolean = false): List<Point> {
+        val directions = if (twoCells)
             listOf(Point(2, 0), Point(0, 2), Point(-2, 0), Point(0, -2))
+        else
+            listOf(Point(1, 0), Point(0, 1), Point(-1, 0), Point(0, -1))
 
         return directions.map { Point(this.x + it.x, this.y + it.y) }
-            .filter { it.x in 0 until width && it.y in 0 until height && (maze[it.y][it.x] == 'p') xor !neighbor }
+            .filter { it.x in 0 until width && it.y in 0 until height && (maze[it.y][it.x] == 'p') xor frontier }
     }
 
     fun solveMaze() {
@@ -81,7 +81,7 @@ class GameMazeRunner() {
             node = solutionPath.last()
             visited.add(node)
             if (node.x != width - 1) {
-                val neighbors = node.getFrontier(neighbor = true, oneCell = true)
+                val neighbors = node.getNeighbors()
                 for (n in neighbors) {
                     if (n !in visited) {
                         solutionPath.addLast(n)
